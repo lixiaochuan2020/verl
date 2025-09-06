@@ -62,6 +62,8 @@ def run_ppo(config) -> None:
         runtime_env_kwargs = ray_init_kwargs.get("runtime_env", {})
         runtime_env = OmegaConf.merge(default_runtime_env, runtime_env_kwargs)
         ray_init_kwargs = OmegaConf.create({**ray_init_kwargs, "runtime_env": runtime_env})
+        # update _temp_dir to own folder
+        ray_init_kwargs["_temp_dir"] = "/data/user_data/xiaochu4/ray_temp"
         print(f"ray init kwargs: {ray_init_kwargs}")
         ray.init(**OmegaConf.to_container(ray_init_kwargs))
 
