@@ -2,7 +2,7 @@
 # It outperforms the Qwen2 7B base model by two percentage points on the test set of GSM8K.
 
 set -x
-DATA_DIR=/home/xiaochu4/reasoning/verl/data
+DATA_DIR=/home/xiaochu4/rl-for-pretrain/verl/data
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \

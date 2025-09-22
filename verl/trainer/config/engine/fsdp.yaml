@@ -32,7 +32,7 @@ forward_prefetch: False
 model_dtype: fp32
 
 # Whether to use original parameters in fsdp. Only avaiable in fsdp1
-use_orig_params: false
+use_orig_params: True
 
 # ulysses sequence parallel size
 ulysses_sequence_parallel_size: 1
