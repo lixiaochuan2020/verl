@@ -19,6 +19,10 @@ Single Process Actor
 
 import logging
 import os
+import json
+from typing import List
+
+import numpy as np
 
 import torch
 from torch import nn
@@ -499,6 +503,82 @@ class DataParallelPPOActor(BasePPOActor):
                         }
                     )
                     append_to_dict(metrics, micro_batch_metrics)
+                # Save model gradients efficiently for DP and FSDP. All ranks enter FSDP context.
+                # rank = torch.distributed.get_rank()
+                # is_fsdp = isinstance(self.actor_module, (FSDP, FSDPModule))
+                # if rank == 0:
+                #     print(f"is_fsdp: {is_fsdp}")
+                # if is_fsdp:
+                #     try:
+                #         _ctx = FSDP.summon_full_params(
+                #             self.actor_module, writeback=False, rank0_only=True, offload_to_cpu=False, with_grads=True
+                #         )
+                #     except TypeError:
+                #         _ctx = FSDP.summon_full_params(self.actor_module, writeback=False, rank0_only=True, with_grads=True)
+                # else:
+                #     from contextlib import nullcontext
+                #     _ctx = nullcontext()
+
+                # with _ctx:
+                #     if rank == 0:
+                #         base_dir = "/data/user_data/xiaochu4/gradient_similarity"
+                #         os.makedirs(base_dir, exist_ok=True)
+                #         base_name = f"grad_rl_{self.config.model_show_name}"
+                #         data_path = os.path.join(base_dir, base_name + ".f32.memmap")
+                #         meta_path = os.path.join(base_dir, base_name + ".json")
+
+                #         # Compute total size and record param ordering for reproducibility.
+                #         param_names: List[str] = []
+                #         param_sizes: List[int] = []
+                #         total_elems = 0
+                #         for name, p in self.actor_module.named_parameters():
+                #             g = getattr(p, "grad", None)
+                #             # if g is None or g.numel() == 0:
+                #             if g is None:
+                #                 continue
+                #             if g.numel() == 0:
+                #                 print(f"WARN: rank {torch.distributed.get_rank()} gradient {name} is empty")
+                #                 continue
+                #             n = g.numel()
+                #             param_names.append(name)
+                #             param_sizes.append(n)
+                #             total_elems += n
+
+                #         if total_elems == 0:
+                #             print("No gradients found to save (total elements = 0). Skipping save.")
+                #         else:
+                #             # Create memmap and stream copy each grad chunk to disk.
+                #             mm = np.memmap(data_path, dtype=np.float32, mode="w+", shape=(total_elems,))
+                #             offset = 0
+                #             for name, p in self.actor_module.named_parameters():
+                #                 g = getattr(p, "grad", None)
+                #                 if g is None or g.numel() == 0:
+                #                     continue
+                #                 t = g.detach().to(dtype=torch.float32, device="cpu", non_blocking=True).reshape(-1).contiguous()
+                #                 n = t.numel()
+                #                 mm[offset : offset + n] = t.numpy()
+                #                 offset += n
+                #                 del t
+                #             mm.flush()
+                #             del mm
+
+                #             # Write metadata for later loading/mapping.
+                #             metadata = {
+                #                 "dtype": "float32",
+                #                 "length": int(total_elems),
+                #                 "param_names": param_names,
+                #                 "param_sizes": [int(x) for x in param_sizes],
+                #                 "format": "flat_concatenation",
+                #                 "fsdp": is_fsdp,
+                #             }
+                #             with open(meta_path, "w") as f:
+                #                 json.dump(metadata, f)
+
+                #             print(
+                #                 f"Saved flat gradient: {total_elems} float32s (≈{total_elems*4/1e9:.2f} GB) to {data_path} with metadata {meta_path}"
+                #             )
+                #     # Synchronize all ranks before exiting the full-param context
+                #     torch.distributed.barrier()
 
                 grad_norm = self._optimizer_step()
                 mini_batch_metrics = {"actor/grad_norm": grad_norm.detach().item()}

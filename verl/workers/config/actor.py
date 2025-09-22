@@ -120,6 +120,7 @@ class ActorConfig(BaseConfig):
     data_loader_seed = 1
     rollout_n: int = 1  # must be override by sampling config
     model_config: HFModelConfig = field(default_factory=BaseConfig)
+    model_show_name: str = "to be set"
 
     def __post_init__(self):
         """Validate actor configuration parameters."""
