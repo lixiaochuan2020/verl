@@ -42,7 +42,7 @@ from verl.single_controller.ray import RayClassWithInitArgs, RayResourcePool, Ra
 from verl.single_controller.ray.base import create_colocated_worker_cls
 from verl.trainer.config import AlgoConfig
 from verl.trainer.ppo import core_algos
-from verl.trainer.ppo.core_algos import AdvantageEstimator, agg_loss
+from verl.trainer.ppo.core_algos import AdvantageEstimator, agg_loss, agg_entropy_loss
 from verl.trainer.ppo.metric_utils import (
     compute_data_metrics,
     compute_throughout_metrics,
@@ -1170,6 +1170,10 @@ class RayPPOTrainer:
                         entropy_agg = agg_loss(loss_mat=entropys, loss_mask=response_masks, loss_agg_mode=loss_agg_mode)
                         old_log_prob_metrics = {"actor/entropy": entropy_agg.detach().item()}
                         metrics.update(old_log_prob_metrics)
+                        # update user-define metrics: two-part entropy
+                        entropy_dict = agg_entropy_loss(loss_mat=entropys, loss_mask=response_masks, loss_agg_mode=loss_agg_mode)
+                        entropy_metrics = {"actor/entropy_first_part": entropy_dict["first_part"].detach().item(), "actor/entropy_last_part": entropy_dict["last_part"].detach().item()}
+                        metrics.update(entropy_metrics)
                         old_log_prob.batch.pop("entropys")
                         batch = batch.union(old_log_prob)
 

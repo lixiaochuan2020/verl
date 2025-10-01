@@ -807,6 +807,19 @@ def agg_loss(loss_mat: torch.Tensor, loss_mask: torch.Tensor, loss_agg_mode: str
 
     return loss
 
+def agg_entropy_loss(loss_mat: torch.Tensor, loss_mask: torch.Tensor, loss_agg_mode: str):
+    """
+    Aggregate the entropy matrix into a scalar.
+    """
+    # split the loss into two parts: the first 50 tokens and the rest
+    loss_mat_first_part = loss_mat[:, :30]
+    loss_mat_last_part = loss_mat[:, 30:]
+    loss_mat_first_part = verl_F.masked_mean(loss_mat_first_part, loss_mask[:, :30])
+    loss_mat_last_part = verl_F.masked_mean(loss_mat_last_part, loss_mask[:, 30:])
+    loss = {"first_part": loss_mat_first_part, "last_part": loss_mat_last_part}
+    print(f"shape of loss_mat: {loss_mat.shape}")
+    print(f"shape of loss_mask: {loss_mask.shape}")
+    return loss
 
 @deprecated("verl.trainer.ppo.core_algos.compute_policy_loss_vanilla")
 def compute_policy_loss(
