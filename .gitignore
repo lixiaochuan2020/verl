@@ -128,3 +128,6 @@ outputs
 .history
 
 data/*
+
+*.whl
+*.whl.1
